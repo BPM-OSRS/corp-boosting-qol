@@ -2,6 +2,8 @@
 
 A suite of quality-of-life tools designed for Corporeal Beast boosting and multi-logging.
 
+![Corp Boosting QOL Demo](https://i.imgur.com/jKGcLB7.gif)
+
 ## Features
 
 ### Combat Overlay
