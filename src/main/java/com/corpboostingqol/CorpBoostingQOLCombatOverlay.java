@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.corpboostingqol;
+package com.corpboostingqol;
 
 import java.awt.Dimension;
 import java.awt.Graphics2D;

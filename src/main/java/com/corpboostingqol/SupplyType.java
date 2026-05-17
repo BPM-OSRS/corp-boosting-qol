@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.corpboostingqol;
+package com.corpboostingqol;
 
 public enum SupplyType
 {
