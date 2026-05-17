@@ -47,13 +47,14 @@ public class CorpBoostingQOLPlugin extends Plugin
 	private static final int VENG_COOLDOWN_TICKS = 50;
 	private static final int VENG_GRAPHIC        = 726;
 	private static final int FANG_ATTACK_ANIM    = 9471;
-	private static final int COMBAT_IDLE_TIMEOUT = 8;
+	private static final int COMBAT_IDLE_TIMEOUT = 10;
 	private static final int SPELLBOOK_VARBIT    = 4070;
 	private static final int LUNAR_SPELLBOOK     = 2;
 
 	// Water Strike cast animation.
 	private static final int WATER_STRIKE_ANIM  = 11423;
-	private static final int NOX_HALBERD_ANIM   = 829;
+	private static final int NOX_HALBERD_ANIM   = 440; // slash/swipe style
+	private static final int NOX_HALBERD_ANIM2  = 428; // jab/stab style
 	private static final int ELDER_MAUL_ANIM    = 7516;
 
 	// Serp helm: 10 scales on combat enter, then 10 more every 90 ticks.
@@ -489,7 +490,7 @@ public class CorpBoostingQOLPlugin extends Plugin
 		}
 
 		// Corp alt — Noxious halberd / Elder maul
-		if ((anim == NOX_HALBERD_ANIM || anim == ELDER_MAUL_ANIM) && inCorpCave)
+		if ((anim == NOX_HALBERD_ANIM || anim == NOX_HALBERD_ANIM2 || anim == ELDER_MAUL_ANIM) && inCorpCave)
 		{
 			inCombat        = true;
 			combatIdleTicks = COMBAT_IDLE_TIMEOUT;
