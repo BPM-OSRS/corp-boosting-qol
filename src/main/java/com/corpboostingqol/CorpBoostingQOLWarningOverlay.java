@@ -23,9 +23,9 @@ public class CorpBoostingQOLWarningOverlay extends Overlay
 	private static final Color BORDER_COLOR  = new Color(30, 30, 30, 255);
 	private static final Color TEXT_COLOR = Color.WHITE;
 
-	private static final int   BOX_WIDTH  = 230;
-	private static final int   ROW_HEIGHT = 22;
-	private static final int   PADDING_X  = 8;
+	private static final int   BOX_WIDTH  = 280;
+	private static final int   ROW_HEIGHT = 26;
+	private static final int   PADDING_X  = 10;
 	private static final int   ARC        = 4;
 
 	private final CorpBoostingQOLPlugin plugin;
@@ -131,7 +131,7 @@ public class CorpBoostingQOLWarningOverlay extends Overlay
 			return null;
 		}
 
-		Font font = FontManager.getRunescapeSmallFont();
+		Font font = FontManager.getRunescapeBoldFont().deriveFont(Font.PLAIN, 16f);
 		g.setFont(font);
 		FontMetrics fm = g.getFontMetrics();
 
@@ -155,7 +155,7 @@ public class CorpBoostingQOLWarningOverlay extends Overlay
 				g.drawLine(0, rowY, BOX_WIDTH, rowY);
 			}
 
-			// Truncate with ellipsis if text overflows box width (bitmap font can't be scaled)
+			// Truncate with ellipsis if text overflows box width
 			int maxWidth = BOX_WIDTH - PADDING_X * 2;
 			while (fm.stringWidth(text) > maxWidth && text.length() > 1)
 			{

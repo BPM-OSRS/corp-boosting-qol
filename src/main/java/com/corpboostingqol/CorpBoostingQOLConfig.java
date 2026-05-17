@@ -9,7 +9,7 @@ import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 import net.runelite.client.config.Keybind;
 
-@ConfigGroup("corpidleutilities")
+@ConfigGroup("corpboostingqol")
 public interface CorpBoostingQOLConfig extends Config
 {
 	// -------------------------------------------------------------------------
@@ -36,6 +36,23 @@ public interface CorpBoostingQOLConfig extends Config
 			position = 2
 	)
 	String splasherSection = "splasher";
+
+	// -------------------------------------------------------------------------
+	// Warning Overlay Color
+	// -------------------------------------------------------------------------
+
+	@Alpha
+	@ConfigItem(
+			keyName = "warningOverlayColor",
+			name = "Warning overlay colour",
+			description = "Background colour of the warning notification boxes",
+			section = corpCaveSection,
+			position = 0
+	)
+	default Color warningOverlayColor()
+	{
+		return new Color(150, 0, 0, 230);
+	}
 
 	// -------------------------------------------------------------------------
 	// Corp Cave — Combat Overlay
