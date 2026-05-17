@@ -2,8 +2,6 @@
 
 A suite of quality-of-life tools designed for Corporeal Beast boosting and multi-logging.
 
-![Corp Boosting QOL Demo](https://i.imgur.com/OwZxHSZ.gif)
-
 ## Features
 
 ### Combat Overlay
@@ -22,7 +20,7 @@ Warns when quick prayers are not active while inside the Corp Cave.
 Prevents accidental walk clicks inside the Corp Cave. Hold a configurable key (default: `0`) to temporarily allow movement.
 
 ### Blood Fury Tracking
-Tracks Amulet of Blood Fury charges by counting hitsplats landed. Warns when charges drop below a configurable threshold. Charge counts persist across logouts per account. Right-click the amulet and choose **Check** at any time to resync.
+Tracks Amulet of Blood Fury charges by decrementing one charge per attack animation (Osmumten's Fang, Noxious Halberd, Elder Maul). Warns when charges drop below a configurable threshold. Charge counts persist across logouts per account. Right-click the amulet and choose **Check** at any time to resync.
 
 ### Rune Pouch Warning
 Warns when any rune in your pouch drops below a configurable threshold. Shows a separate warning for each low rune.
@@ -42,4 +40,3 @@ Tracks charges for the three items used by splasher accounts. All values persist
 - Blood fury, tome, serp helm, and toxic staff charge counts all persist across logouts per account.
 - Supply warnings only update when the bank is opened.
 - Serp helm and toxic staff both show the same "Scales: X" message on Check — the plugin distinguishes them by which item you right-clicked.
-- - Warning overlay background colour is fully configurable via the Corp Cave settings panel.

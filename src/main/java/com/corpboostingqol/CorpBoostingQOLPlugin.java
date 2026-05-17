@@ -22,7 +22,6 @@ import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.GraphicChanged;
-import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.VarbitChanged;
@@ -487,6 +486,7 @@ public class CorpBoostingQOLPlugin extends Plugin
 		{
 			inCombat        = true;
 			combatIdleTicks = COMBAT_IDLE_TIMEOUT;
+			decrementBloodFury();
 		}
 
 		// Corp alt — Noxious halberd / Elder maul
@@ -494,6 +494,7 @@ public class CorpBoostingQOLPlugin extends Plugin
 		{
 			inCombat        = true;
 			combatIdleTicks = COMBAT_IDLE_TIMEOUT;
+			decrementBloodFury();
 		}
 
 		// Splasher — Water Strike
@@ -528,25 +529,6 @@ public class CorpBoostingQOLPlugin extends Plugin
 				saveTomeCharges();
 				reevaluateTomeWarn();
 			}
-		}
-	}
-
-	@Subscribe
-	public void onHitsplatApplied(HitsplatApplied event)
-	{
-		if (!config.bloodFuryEnabled() || bloodFuryCharges <= 0)
-		{
-			return;
-		}
-		if (event.getActor() == client.getLocalPlayer())
-		{
-			return;
-		}
-		if (event.getHitsplat().isMine() && event.getHitsplat().getAmount() > 0)
-		{
-			bloodFuryCharges--;
-			saveBloodFuryCharges();
-			bloodFuryWarn = bloodFuryCharges < config.bloodFuryThreshold();
 		}
 	}
 
@@ -815,6 +797,17 @@ public class CorpBoostingQOLPlugin extends Plugin
 		}
 		supplyCount = count;
 		supplyWarn  = count < config.supplyThreshold();
+	}
+
+	private void decrementBloodFury()
+	{
+		if (!config.bloodFuryEnabled() || bloodFuryNoData || bloodFuryCharges <= 0)
+		{
+			return;
+		}
+		bloodFuryCharges--;
+		saveBloodFuryCharges();
+		bloodFuryWarn = bloodFuryCharges < config.bloodFuryThreshold();
 	}
 
 	private String getBloodFuryConfigKey()

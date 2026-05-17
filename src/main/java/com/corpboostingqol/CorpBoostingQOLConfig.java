@@ -166,7 +166,7 @@ public interface CorpBoostingQOLConfig extends Config
 	@ConfigItem(
 			keyName = "bloodFuryEnabled",
 			name = "Blood fury tracking",
-			description = "Decrements a charge for every non-zero hitsplat you land. Right-click your amulet and choose Check to resync.",
+			description = "Decrements a charge for every attack animation (Fang, Nox Halberd, Elder Maul). Right-click your amulet and choose Check to resync.",
 			section = suppliesSection,
 			position = 0
 	)
