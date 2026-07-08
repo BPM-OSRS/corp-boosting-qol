@@ -27,7 +27,7 @@ public class PetBoostingQOLAlertOverlay extends Overlay
 	private static final int ITEM_SATURATED_HEART   = ItemID.SATURATED_HEART;
 	private static final int ITEM_PRAYER_REGEN_1    = ItemID.PRAYER_REGENERATION_POTION1;
 	private static final int SPRITE_CURE_ME         = SpriteID.SPELL_CURE_ME;
-	private static final int ITEM_ARAXYTE_SACK      = ItemID.ARAXYTE_VENOM_SACK;
+	private static final int ITEM_ARAXYTE_SACK      = ItemID.ARAXYTE_VENOM_SAC;
 	private static final int ITEM_EXT_ANTIFIRE_1    = ItemID.EXTENDED_ANTIFIRE1;
 	private static final int ITEM_PRAYER_POTION_1   = ItemID.PRAYER_POTION1;     // 143
 	private static final int SPRITE_SPEC            = SpriteID.SPELL_ENERGY_TRANSFER;
