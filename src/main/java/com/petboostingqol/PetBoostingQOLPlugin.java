@@ -54,6 +54,7 @@ public class PetBoostingQOLPlugin extends Plugin
 	static final int MOLE_LAIR_REGION  = 6993;
 	static final int KBD_LAIR_REGION   = 9033;
 	static final int SMOKE_LAIR_REGION  = 9619;
+	static final int SCORPIA_LAIR_REGION = 12961;
 
 	// Shared constants
 	private static final int VENG_COOLDOWN_TICKS  = 50;
@@ -130,6 +131,7 @@ public class PetBoostingQOLPlugin extends Plugin
 	boolean inKbdLair   = false;
 	boolean inSireLair  = false;
 	boolean inSmokeLair = false;
+	boolean inScorpiaLair = false;
 
 	// Corp state
 	boolean inCombat        = false;
@@ -175,6 +177,13 @@ public class PetBoostingQOLPlugin extends Plugin
 	boolean kqPrayerRegenWarn      = false;
 	boolean kqPoisoned             = false;
 	boolean kqLowPrayerWarn        = false;
+	boolean kqHpWarn               = false;
+
+	// Scorpia state
+	boolean scorpiaPrayerRegenWarn = false;
+	boolean scorpiaLowPrayerWarn   = false;
+	boolean scorpiaPoisoned        = false;
+	boolean scorpiaSpecWarn        = false;
 
 	// Mole state
 	boolean moleSaturatedActive    = false;
@@ -328,6 +337,13 @@ public class PetBoostingQOLPlugin extends Plugin
 		kqPrayerRegenWarn      = false;
 		kqPoisoned             = false;
 		kqLowPrayerWarn        = false;
+		kqHpWarn               = false;
+
+		inScorpiaLair           = false;
+		scorpiaPrayerRegenWarn  = false;
+		scorpiaLowPrayerWarn    = false;
+		scorpiaPoisoned         = false;
+		scorpiaSpecWarn         = false;
 
 		moleSaturatedActive    = false;
 		moleSaturatedWarn      = false;
@@ -414,6 +430,7 @@ public class PetBoostingQOLPlugin extends Plugin
 		inSireLair  = region == 11850 || region == 11851 || region == 12106
 				|| region == 12362 || region == 12363;
 		inSmokeLair = region == SMOKE_LAIR_REGION;
+		inScorpiaLair = region == SCORPIA_LAIR_REGION;
 
 		// Lazy loaders
 		if (!bloodFuryLoaded && config.bloodFuryEnabled())
@@ -533,6 +550,7 @@ public class PetBoostingQOLPlugin extends Plugin
 			}
 			kqPoisoned      = config.kqPoisonEnabled()    && client.getVarpValue(VarPlayerID.POISON) > 0;
 			kqLowPrayerWarn = config.kqLowPrayerEnabled() && client.getBoostedSkillLevel(Skill.PRAYER) < config.kqPrayerThreshold();
+			kqHpWarn        = config.kqHpEnabled()        && client.getBoostedSkillLevel(Skill.HITPOINTS) <= config.kqHpThreshold();
 		}
 		else
 		{
@@ -541,6 +559,7 @@ public class PetBoostingQOLPlugin extends Plugin
 			kqPoisoned      = false;
 			kqLowPrayerWarn = false;
 			kqVengReady     = false;
+			kqHpWarn        = false;
 		}
 
 		if (inMoleLair)
@@ -615,6 +634,31 @@ public class PetBoostingQOLPlugin extends Plugin
 		{
 			smokeSpecWarn = false;
 		}
+
+		if (inScorpiaLair)
+		{
+			if (config.scorpiaPrayerRegenEnabled())
+			{
+				boolean buffActive = client.getVarbitValue(VarbitID.PRAYER_REGENERATION_POTION_TIMER) > 0;
+				scorpiaPrayerRegenWarn = !buffActive;
+			}
+			scorpiaLowPrayerWarn = config.scorpiaLowPrayerEnabled()
+					&& client.getBoostedSkillLevel(Skill.PRAYER) < config.scorpiaPrayerThreshold();
+			scorpiaPoisoned = config.scorpiaPoisonEnabled() && client.getVarpValue(VarPlayerID.POISON) > 0;
+			if (config.scorpiaSpecEnabled())
+			{
+				int spec = client.getVarpValue(SPEC_ENERGY_VARPLAYER);
+				if (spec >= 1000) scorpiaSpecWarn = true;
+				else if (spec < 1000) scorpiaSpecWarn = false;
+			}
+		}
+		else
+		{
+			scorpiaPrayerRegenWarn = false;
+			scorpiaLowPrayerWarn   = false;
+			scorpiaPoisoned        = false;
+			scorpiaSpecWarn        = false;
+		}
 	}
 
 	@Subscribe
@@ -673,6 +717,12 @@ public class PetBoostingQOLPlugin extends Plugin
 			return;
 		}
 		if (inKqCave && config.kqMovementLockEnabled() && !isHotkeyHeld
+			&& event.getMenuAction() == MenuAction.WALK)
+		{
+			event.consume();
+			return;
+		}
+		if (inScorpiaLair && config.scorpiaMovementLockEnabled() && !isHotkeyHeld
 			&& event.getMenuAction() == MenuAction.WALK)
 		{
 			event.consume();

@@ -11,6 +11,18 @@ import net.runelite.client.config.Keybind;
 @ConfigGroup("petboostingqol")
 public interface PetBoostingQOLConfig extends Config
 {
+	@ConfigSection(name = "Performance", description = "General performance settings", position = -1, closedByDefault = true)
+	String perfSection = "perf";
+
+	@ConfigItem(keyName = "lowCpuMode", name = "Low CPU mode (flashing overlays)",
+		description = "Makes the fullscreen alert overlays flash on/off instead of drawing solid every frame, "
+			+ "cutting their average rendering cost roughly in half. Icons still show constantly either way.",
+		section = perfSection, position = 0)
+	default boolean lowCpuMode()
+	{
+		return false;
+	}
+
 	@ConfigSection(name = "Corporeal Beast", description = "All Corp settings", position = 0, closedByDefault = true)
 	String corpSection = "corp";
 
@@ -28,6 +40,9 @@ public interface PetBoostingQOLConfig extends Config
 
 	@ConfigSection(name = "Thermonuclear Smoke Devil", description = "All Smoke Devil settings", position = 5, closedByDefault = true)
 	String smokeSection = "smoke";
+
+	@ConfigSection(name = "Scorpia", description = "All Scorpia settings", position = 6, closedByDefault = true)
+	String scorpiaSection = "scorpia";
 
 	// CORP
 
@@ -565,6 +580,47 @@ public interface PetBoostingQOLConfig extends Config
 		return 5;
 	}
 
+	@ConfigItem(keyName = "kqHpEnabled", name = "Low HP indicator",
+		description = "Show an alert when your hitpoints fall at or below the threshold at KQ",
+		section = kqSection, position = 30)
+	default boolean kqHpEnabled()
+	{
+		return false;
+	}
+
+	@ConfigItem(keyName = "kqHpIconEnabled", name = "Low HP icon",
+		description = "Show the Hitpoints skill icon when HP is at or below the threshold",
+		section = kqSection, position = 31)
+	default boolean kqHpIconEnabled()
+	{
+		return false;
+	}
+
+	@ConfigItem(keyName = "kqHpOverlayEnabled", name = "Low HP overlay",
+		description = "Show a fullscreen colour overlay when HP is at or below the threshold",
+		section = kqSection, position = 32)
+	default boolean kqHpOverlayEnabled()
+	{
+		return false;
+	}
+
+	@Alpha
+	@ConfigItem(keyName = "kqHpOverlayColor", name = "Low HP overlay colour",
+		description = "Colour of the low HP overlay",
+		section = kqSection, position = 33)
+	default Color kqHpOverlayColor()
+	{
+		return new Color(255, 80, 80, 100);
+	}
+
+	@ConfigItem(keyName = "kqHpThreshold", name = "HP threshold",
+		description = "Show a low HP warning when hitpoints fall at or below this number",
+		section = kqSection, position = 34)
+	default int kqHpThreshold()
+	{
+		return 28;
+	}
+
 	// MOLE
 
 	@ConfigItem(keyName = "moleSaturatedHeartEnabled", name = "Saturated Heart indicator",
@@ -800,6 +856,156 @@ public interface PetBoostingQOLConfig extends Config
 		description = "Colour of the 100% spec overlay at Thermonuclear Smoke Devil",
 		section = smokeSection, position = 3)
 	default Color smokeSpecOverlayColor()
+	{
+		return new Color(255, 255, 100, 100);
+	}
+
+	// SCORPIA
+
+	@ConfigItem(keyName = "scorpiaMovementLockEnabled", name = "Movement lock",
+		description = "Consume walk clicks inside Scorpia's lair unless the hold key is held (uses same key as Corp setting)",
+		section = scorpiaSection, position = 0)
+	default boolean scorpiaMovementLockEnabled()
+	{
+		return false;
+	}
+
+	@ConfigItem(keyName = "scorpiaPrayerRegenEnabled", name = "Prayer regen indicator",
+		description = "Show an alert when your Prayer Regeneration potion buff is not active at Scorpia",
+		section = scorpiaSection, position = 1)
+	default boolean scorpiaPrayerRegenEnabled()
+	{
+		return false;
+	}
+
+	@ConfigItem(keyName = "scorpiaPrayerRegenIconEnabled", name = "Prayer regen icon",
+		description = "Show a Prayer Regeneration Potion icon when the buff is not active",
+		section = scorpiaSection, position = 2)
+	default boolean scorpiaPrayerRegenIconEnabled()
+	{
+		return false;
+	}
+
+	@ConfigItem(keyName = "scorpiaPrayerRegenOverlayEnabled", name = "Prayer regen overlay",
+		description = "Show a fullscreen colour overlay when the Prayer Regeneration buff is not active",
+		section = scorpiaSection, position = 3)
+	default boolean scorpiaPrayerRegenOverlayEnabled()
+	{
+		return false;
+	}
+
+	@Alpha
+	@ConfigItem(keyName = "scorpiaPrayerRegenOverlayColor", name = "Prayer regen overlay colour",
+		description = "Colour of the prayer regen overlay",
+		section = scorpiaSection, position = 4)
+	default Color scorpiaPrayerRegenOverlayColor()
+	{
+		return new Color(110, 60, 51, 100);
+	}
+
+	@ConfigItem(keyName = "scorpiaLowPrayerEnabled", name = "Low prayer indicator",
+		description = "Show an alert when your prayer points fall below the threshold at Scorpia",
+		section = scorpiaSection, position = 5)
+	default boolean scorpiaLowPrayerEnabled()
+	{
+		return false;
+	}
+
+	@ConfigItem(keyName = "scorpiaLowPrayerIconEnabled", name = "Low prayer icon",
+		description = "Show a Prayer Potion icon when prayer is low",
+		section = scorpiaSection, position = 6)
+	default boolean scorpiaLowPrayerIconEnabled()
+	{
+		return false;
+	}
+
+	@ConfigItem(keyName = "scorpiaLowPrayerOverlayEnabled", name = "Low prayer overlay",
+		description = "Show a fullscreen colour overlay when prayer is low",
+		section = scorpiaSection, position = 7)
+	default boolean scorpiaLowPrayerOverlayEnabled()
+	{
+		return false;
+	}
+
+	@Alpha
+	@ConfigItem(keyName = "scorpiaLowPrayerOverlayColor", name = "Low prayer overlay colour",
+		description = "Colour of the low prayer overlay",
+		section = scorpiaSection, position = 8)
+	default Color scorpiaLowPrayerOverlayColor()
+	{
+		return new Color(180, 180, 255, 100);
+	}
+
+	@ConfigItem(keyName = "scorpiaPrayerThreshold", name = "Prayer threshold",
+		description = "Show a prayer warning when prayer points fall below this number",
+		section = scorpiaSection, position = 9)
+	default int scorpiaPrayerThreshold()
+	{
+		return 5;
+	}
+
+	@ConfigItem(keyName = "scorpiaPoisonEnabled", name = "Poison indicator",
+		description = "Show an alert when you are poisoned at Scorpia",
+		section = scorpiaSection, position = 10)
+	default boolean scorpiaPoisonEnabled()
+	{
+		return false;
+	}
+
+	@ConfigItem(keyName = "scorpiaPoisonIconEnabled", name = "Poison icon",
+		description = "Show the Cure Me spell icon when poisoned",
+		section = scorpiaSection, position = 11)
+	default boolean scorpiaPoisonIconEnabled()
+	{
+		return false;
+	}
+
+	@ConfigItem(keyName = "scorpiaPoisonOverlayEnabled", name = "Poison overlay",
+		description = "Show a fullscreen colour overlay when poisoned",
+		section = scorpiaSection, position = 12)
+	default boolean scorpiaPoisonOverlayEnabled()
+	{
+		return false;
+	}
+
+	@Alpha
+	@ConfigItem(keyName = "scorpiaPoisonOverlayColor", name = "Poison overlay colour",
+		description = "Colour of the poison overlay",
+		section = scorpiaSection, position = 13)
+	default Color scorpiaPoisonOverlayColor()
+	{
+		return new Color(60, 200, 60, 100);
+	}
+
+	@ConfigItem(keyName = "scorpiaSpecEnabled", name = "Special attack indicator",
+		description = "Show an alert when special attack energy is full at Scorpia",
+		section = scorpiaSection, position = 14)
+	default boolean scorpiaSpecEnabled()
+	{
+		return false;
+	}
+
+	@ConfigItem(keyName = "scorpiaSpecIconEnabled", name = "Special attack icon",
+		description = "Show a special attack icon when energy is full",
+		section = scorpiaSection, position = 15)
+	default boolean scorpiaSpecIconEnabled()
+	{
+		return false;
+	}
+
+	@ConfigItem(keyName = "scorpiaSpecOverlayEnabled", name = "Special attack overlay",
+		description = "Show a fullscreen colour overlay when special attack energy is full",
+		section = scorpiaSection, position = 16)
+	default boolean scorpiaSpecOverlayEnabled()
+	{
+		return false;
+	}
+
+	@Alpha
+	@ConfigItem(keyName = "scorpiaSpecOverlayColor", name = "Special attack overlay colour",
+		description = "Colour of the special attack overlay",
+		section = scorpiaSection, position = 17)
+	default Color scorpiaSpecOverlayColor()
 	{
 		return new Color(255, 255, 100, 100);
 	}

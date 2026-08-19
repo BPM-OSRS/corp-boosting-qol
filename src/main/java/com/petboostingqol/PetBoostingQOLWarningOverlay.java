@@ -6,6 +6,7 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
@@ -26,6 +27,10 @@ public class PetBoostingQOLWarningOverlay extends Overlay
 	private final PetBoostingQOLPlugin plugin;
 	private final PetBoostingQOLConfig config;
 
+	// Cached background (rounded fill + border + row separators), rebuilt
+	// only when row count or color changes.
+	private CachedBackground backgroundCache;
+
 	@Inject
 	public PetBoostingQOLWarningOverlay(PetBoostingQOLPlugin plugin, PetBoostingQOLConfig config)
 	{
@@ -44,11 +49,9 @@ public class PetBoostingQOLWarningOverlay extends Overlay
 
 		List<String> rows = new ArrayList<>();
 
-		// Rune pouch — show always
 		if (config.runePouchEnabled() && plugin.runePouchWarnings != null)
 			for (String warning : plugin.runePouchWarnings) rows.add(warning);
 
-		// Corp cave only
 		if (plugin.inCorpCave)
 		{
 			if (config.tomeOfWaterEnabled())
@@ -68,7 +71,6 @@ public class PetBoostingQOLWarningOverlay extends Overlay
 			}
 		}
 
-		// Outside all boss caves (bank/supply warnings)
 		if (!plugin.inCorpCave && !plugin.inKqCave && !plugin.inMoleLair && !plugin.inKbdLair)
 		{
 			if (config.zulrahScalesEnabled() && plugin.zulrahScalesWarn)
@@ -93,29 +95,89 @@ public class PetBoostingQOLWarningOverlay extends Overlay
 		FontMetrics fm = g.getFontMetrics();
 
 		int totalHeight = rows.size() * ROW_HEIGHT;
+		Color color = config.warningOverlayColor();
 
-		g.setColor(config.warningOverlayColor());
-		g.fillRoundRect(0, 0, BOX_WIDTH, totalHeight, ARC, ARC);
-		g.setColor(config.warningOverlayColor().darker());
-		g.drawRoundRect(0, 0, BOX_WIDTH - 1, totalHeight - 1, ARC, ARC);
+		BufferedImage background = getCachedBackground(rows.size(), totalHeight, color);
+		if (background != null)
+		{
+			g.drawImage(background, 0, 0, null);
+		}
 
 		for (int i = 0; i < rows.size(); i++)
 		{
 			String text = rows.get(i);
 			int rowY = i * ROW_HEIGHT;
-			if (i > 0)
-			{
-				g.setColor(config.warningOverlayColor().darker());
-				g.drawLine(0, rowY, BOX_WIDTH, rowY);
-			}
+
 			int maxWidth = BOX_WIDTH - PADDING_X * 2;
 			while (fm.stringWidth(text) > maxWidth && text.length() > 4)
 				text = text.substring(0, text.length() - 4) + "...";
+
 			g.setColor(TEXT_COLOR);
 			int ty = rowY + (ROW_HEIGHT - fm.getHeight()) / 2 + fm.getAscent();
 			g.drawString(text, PADDING_X, ty);
 		}
 
 		return new Dimension(BOX_WIDTH, totalHeight);
+	}
+
+	private BufferedImage getCachedBackground(int rowCount, int totalHeight, Color color)
+	{
+		if (totalHeight <= 0)
+		{
+			return null;
+		}
+
+		if (backgroundCache != null && backgroundCache.matches(rowCount, totalHeight, color))
+		{
+			return backgroundCache.image;
+		}
+
+		BufferedImage img = new BufferedImage(BOX_WIDTH, totalHeight, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D ig = img.createGraphics();
+		try
+		{
+			ig.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+			ig.setColor(color);
+			ig.fillRoundRect(0, 0, BOX_WIDTH, totalHeight, ARC, ARC);
+
+			Color border = color.darker();
+			ig.setColor(border);
+			ig.drawRoundRect(0, 0, BOX_WIDTH - 1, totalHeight - 1, ARC, ARC);
+
+			for (int i = 1; i < rowCount; i++)
+			{
+				int rowY = i * ROW_HEIGHT;
+				ig.drawLine(0, rowY, BOX_WIDTH, rowY);
+			}
+		}
+		finally
+		{
+			ig.dispose();
+		}
+
+		backgroundCache = new CachedBackground(rowCount, totalHeight, color, img);
+		return img;
+	}
+
+	private static final class CachedBackground
+	{
+		final int rowCount;
+		final int totalHeight;
+		final Color color;
+		final BufferedImage image;
+
+		CachedBackground(int rowCount, int totalHeight, Color color, BufferedImage image)
+		{
+			this.rowCount = rowCount;
+			this.totalHeight = totalHeight;
+			this.color = color;
+			this.image = image;
+		}
+
+		boolean matches(int rowCount, int totalHeight, Color color)
+		{
+			return this.rowCount == rowCount && this.totalHeight == totalHeight && this.color.equals(color);
+		}
 	}
 }

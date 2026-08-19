@@ -6,7 +6,9 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import javax.inject.Inject;
 import net.runelite.api.ItemID;
 import net.runelite.api.SpriteID;
@@ -23,36 +25,46 @@ public class PetBoostingQOLAlertOverlay extends Overlay
 	private static final int SPRITE_PRAYER    = SpriteID.SKILL_PRAYER;
 	private static final int SPRITE_LUNAR     = SpriteID.TAB_MAGIC_SPELLBOOK_LUNAR;
 	private static final int SPRITE_ATTACK    = SpriteID.SKILL_ATTACK;
+	private static final int SPRITE_HITPOINTS = SpriteID.SKILL_HITPOINTS;
+	private static final int SPRITE_CURE_ME   = SpriteID.SPELL_CURE_ME;
+	private static final int SPRITE_SPEC      = SpriteID.SPELL_ENERGY_TRANSFER;
 
-	private static final int ITEM_SATURATED_HEART   = ItemID.SATURATED_HEART;
-	private static final int ITEM_PRAYER_REGEN_1    = ItemID.PRAYER_REGENERATION_POTION1;
-	private static final int SPRITE_CURE_ME         = SpriteID.SPELL_CURE_ME;
-	private static final int ITEM_ARAXYTE_SACK      = ItemID.ARAXYTE_VENOM_SAC;
-	private static final int ITEM_EXT_ANTIFIRE_1    = ItemID.EXTENDED_ANTIFIRE1;
-	private static final int ITEM_PRAYER_POTION_1   = ItemID.PRAYER_POTION1;     // 143
-	private static final int SPRITE_SPEC            = SpriteID.SPELL_ENERGY_TRANSFER;
+	private static final int ITEM_SATURATED_HEART = ItemID.SATURATED_HEART;
+	private static final int ITEM_PRAYER_REGEN_1  = ItemID.PRAYER_REGENERATION_POTION1;
+	private static final int ITEM_ARAXYTE_SACK    = ItemID.ARAXYTE_VENOM_SAC;
+	private static final int ITEM_EXT_ANTIFIRE_1  = ItemID.EXTENDED_ANTIFIRE1;
+	private static final int ITEM_PRAYER_POTION_1 = ItemID.PRAYER_POTION1;
 
 	private static final float ICON_FRACTION = 0.10f;
+
+	// Low CPU mode: blink the rect overlay instead of drawing it every frame.
+	// Icons are unaffected. Only the full-height color fill gets skipped on
+	// "off" frames.
+	private static final int BLINK_HALF_PERIOD_FRAMES = 25; // ~0.5s on, ~0.5s off at 50fps
+	private long blinkFrameCounter = 0;
 
 	private final PetBoostingQOLPlugin plugin;
 	private final PetBoostingQOLConfig config;
 	private final SpriteManager spriteManager;
 	private final ItemManager itemManager;
 
-	// Sprite-based icons (Corp)
 	private BufferedImage vengIcon;
 	private BufferedImage prayerIcon;
 	private BufferedImage lunarIcon;
 	private BufferedImage combatIcon;
 	private BufferedImage cureMeIcon;
 	private BufferedImage specIcon;
-
-	// Item-based icons (new bosses)
+	private BufferedImage hpIcon;
 	private BufferedImage saturatedHeartIcon;
 	private BufferedImage prayerRegenIcon;
 	private BufferedImage araxyteSackIcon;
 	private BufferedImage extAntifireIcon;
 	private BufferedImage prayerPotionIcon;
+
+	// Cached rect slice and scaled icon per alert type, so we're not
+	// re-rendering a fillRect or re-scaling an icon on every single frame.
+	private final Map<AlertType, CachedSlice> sliceCache = new EnumMap<>(AlertType.class);
+	private final Map<AlertType, CachedIcon> iconCache = new EnumMap<>(AlertType.class);
 
 	@Inject
 	public PetBoostingQOLAlertOverlay(PetBoostingQOLPlugin plugin, PetBoostingQOLConfig config,
@@ -89,6 +101,7 @@ public class PetBoostingQOLAlertOverlay extends Overlay
 			if (config.kqPrayerRegenEnabled() && plugin.kqPrayerRegenWarn)      active.add(AlertType.KQ_PRAYER_REGEN);
 			if (config.kqPoisonEnabled() && plugin.kqPoisoned)                  active.add(AlertType.KQ_POISON);
 			if (config.kqLowPrayerEnabled() && plugin.kqLowPrayerWarn)          active.add(AlertType.KQ_LOW_PRAYER);
+			if (config.kqHpEnabled() && plugin.kqHpWarn)                        active.add(AlertType.KQ_HP);
 		}
 
 		if (plugin.inMoleLair)
@@ -114,7 +127,17 @@ public class PetBoostingQOLAlertOverlay extends Overlay
 			if (config.smokeSpecEnabled() && plugin.smokeSpecWarn)      active.add(AlertType.SMOKE_SPEC);
 		}
 
+		if (plugin.inScorpiaLair)
+		{
+			if (config.scorpiaPrayerRegenEnabled() && plugin.scorpiaPrayerRegenWarn) active.add(AlertType.SCORPIA_PRAYER_REGEN);
+			if (config.scorpiaLowPrayerEnabled() && plugin.scorpiaLowPrayerWarn)     active.add(AlertType.SCORPIA_LOW_PRAYER);
+			if (config.scorpiaPoisonEnabled() && plugin.scorpiaPoisoned)             active.add(AlertType.SCORPIA_POISON);
+			if (config.scorpiaSpecEnabled() && plugin.scorpiaSpecWarn)               active.add(AlertType.SCORPIA_SPEC);
+		}
+
 		if (active.isEmpty()) return null;
+
+		blinkFrameCounter++;
 
 		Rectangle bounds = g.getClipBounds();
 		if (bounds == null) return null;
@@ -130,15 +153,19 @@ public class PetBoostingQOLAlertOverlay extends Overlay
 			AlertType type  = active.get(i);
 			int sliceX = i * sliceW;
 
-			if (shouldDrawOverlay(type))
+			if (shouldDrawOverlay(type) && shouldDrawRectThisFrame())
 			{
-				g.setColor(getOverlayColor(type));
-				g.fillRect(sliceX, 0, sliceW, screenH);
+				Color color = getOverlayColor(type);
+				BufferedImage slice = getCachedSlice(type, sliceW, screenH, color);
+				if (slice != null)
+				{
+					g.drawImage(slice, sliceX, 0, null);
+				}
 			}
 
 			if (shouldDrawIcon(type))
 			{
-				BufferedImage icon = getIcon(type, iconSize);
+				BufferedImage icon = getCachedIcon(type, iconSize);
 				if (icon != null)
 				{
 					int ix = sliceX + (sliceW - icon.getWidth()) / 2;
@@ -151,7 +178,93 @@ public class PetBoostingQOLAlertOverlay extends Overlay
 		return null;
 	}
 
-	// Dispatch helpers
+	private BufferedImage getCachedSlice(AlertType type, int width, int height, Color color)
+	{
+		if (width <= 0 || height <= 0)
+		{
+			return null;
+		}
+
+		CachedSlice cached = sliceCache.get(type);
+		if (cached != null && cached.matches(width, height, color))
+		{
+			return cached.image;
+		}
+
+		BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D ig = img.createGraphics();
+		try
+		{
+			ig.setColor(color);
+			ig.fillRect(0, 0, width, height);
+		}
+		finally
+		{
+			ig.dispose();
+		}
+
+		sliceCache.put(type, new CachedSlice(width, height, color, img));
+		return img;
+	}
+
+	private static final class CachedSlice
+	{
+		final int width;
+		final int height;
+		final Color color;
+		final BufferedImage image;
+
+		CachedSlice(int width, int height, Color color, BufferedImage image)
+		{
+			this.width = width;
+			this.height = height;
+			this.color = color;
+			this.image = image;
+		}
+
+		boolean matches(int width, int height, Color color)
+		{
+			return this.width == width && this.height == height && this.color.equals(color);
+		}
+	}
+
+	private BufferedImage getCachedIcon(AlertType type, int size)
+	{
+		CachedIcon cached = iconCache.get(type);
+		if (cached != null && cached.size == size)
+		{
+			return cached.image;
+		}
+
+		BufferedImage icon = getIcon(type, size);
+		if (icon != null)
+		{
+			iconCache.put(type, new CachedIcon(size, icon));
+		}
+		return icon;
+	}
+
+	private static final class CachedIcon
+	{
+		final int size;
+		final BufferedImage image;
+
+		CachedIcon(int size, BufferedImage image)
+		{
+			this.size = size;
+			this.image = image;
+		}
+	}
+
+	private boolean shouldDrawRectThisFrame()
+	{
+		if (!config.lowCpuMode())
+		{
+			return true;
+		}
+		return (blinkFrameCounter / BLINK_HALF_PERIOD_FRAMES) % 2 == 0;
+	}
+
 	private boolean shouldDrawOverlay(AlertType type)
 	{
 		switch (type)
@@ -167,6 +280,7 @@ public class PetBoostingQOLAlertOverlay extends Overlay
 			case KQ_PRAYER_REGEN:  return config.kqPrayerRegenOverlayEnabled();
 			case KQ_POISON:        return config.kqPoisonOverlayEnabled();
 			case KQ_LOW_PRAYER:    return config.kqLowPrayerOverlayEnabled();
+			case KQ_HP:            return config.kqHpOverlayEnabled();
 			case MOLE_SATURATED:   return config.moleSaturatedOverlayEnabled();
 			case MOLE_SPEC:        return config.moleSpecOverlayEnabled();
 			case KBD_ANTIFIRE:     return config.kbdAntifireOverlayEnabled();
@@ -174,6 +288,10 @@ public class PetBoostingQOLAlertOverlay extends Overlay
 			case KBD_SPEC:         return config.kbdSpecOverlayEnabled();
 			case SIRE_SPEC:        return config.sireSpecOverlayEnabled();
 			case SMOKE_SPEC:       return config.smokeSpecOverlayEnabled();
+			case SCORPIA_PRAYER_REGEN: return config.scorpiaPrayerRegenOverlayEnabled();
+			case SCORPIA_LOW_PRAYER:   return config.scorpiaLowPrayerOverlayEnabled();
+			case SCORPIA_POISON:       return config.scorpiaPoisonOverlayEnabled();
+			case SCORPIA_SPEC:         return config.scorpiaSpecOverlayEnabled();
 			default:               return false;
 		}
 	}
@@ -193,6 +311,7 @@ public class PetBoostingQOLAlertOverlay extends Overlay
 			case KQ_PRAYER_REGEN:  return config.kqPrayerRegenIconEnabled();
 			case KQ_POISON:        return config.kqPoisonIconEnabled();
 			case KQ_LOW_PRAYER:    return config.kqLowPrayerIconEnabled();
+			case KQ_HP:            return config.kqHpIconEnabled();
 			case MOLE_SATURATED:   return config.moleSaturatedIconEnabled();
 			case MOLE_SPEC:        return config.moleSpecIconEnabled();
 			case KBD_ANTIFIRE:     return config.kbdAntifireIconEnabled();
@@ -200,6 +319,10 @@ public class PetBoostingQOLAlertOverlay extends Overlay
 			case KBD_SPEC:         return config.kbdSpecIconEnabled();
 			case SIRE_SPEC:        return config.sireSpecIconEnabled();
 			case SMOKE_SPEC:       return config.smokeSpecIconEnabled();
+			case SCORPIA_PRAYER_REGEN: return config.scorpiaPrayerRegenIconEnabled();
+			case SCORPIA_LOW_PRAYER:   return config.scorpiaLowPrayerIconEnabled();
+			case SCORPIA_POISON:       return config.scorpiaPoisonIconEnabled();
+			case SCORPIA_SPEC:         return config.scorpiaSpecIconEnabled();
 			default:               return false;
 		}
 	}
@@ -219,6 +342,7 @@ public class PetBoostingQOLAlertOverlay extends Overlay
 			case KQ_PRAYER_REGEN:  return config.kqPrayerRegenOverlayColor();
 			case KQ_POISON:        return config.kqPoisonOverlayColor();
 			case KQ_LOW_PRAYER:    return config.kqLowPrayerOverlayColor();
+			case KQ_HP:            return config.kqHpOverlayColor();
 			case MOLE_SATURATED:   return config.moleSaturatedOverlayColor();
 			case MOLE_SPEC:        return config.moleSpecOverlayColor();
 			case KBD_ANTIFIRE:     return config.kbdAntifireOverlayColor();
@@ -226,6 +350,10 @@ public class PetBoostingQOLAlertOverlay extends Overlay
 			case KBD_SPEC:         return config.kbdSpecOverlayColor();
 			case SIRE_SPEC:        return config.sireSpecOverlayColor();
 			case SMOKE_SPEC:       return config.smokeSpecOverlayColor();
+			case SCORPIA_PRAYER_REGEN: return config.scorpiaPrayerRegenOverlayColor();
+			case SCORPIA_LOW_PRAYER:   return config.scorpiaLowPrayerOverlayColor();
+			case SCORPIA_POISON:       return config.scorpiaPoisonOverlayColor();
+			case SCORPIA_SPEC:         return config.scorpiaSpecOverlayColor();
 			default:               return new Color(255, 0, 0, 100);
 		}
 	}
@@ -263,10 +391,16 @@ public class PetBoostingQOLAlertOverlay extends Overlay
 			case KBD_SPEC:
 			case SIRE_SPEC:
 			case SMOKE_SPEC:
+			case SCORPIA_SPEC:
 				if (specIcon == null) specIcon = spriteManager.getSprite(SPRITE_SPEC, 0);
 				return scaleIcon(specIcon, size);
 
+			case KQ_HP:
+				if (hpIcon == null) hpIcon = spriteManager.getSprite(SPRITE_HITPOINTS, 0);
+				return scaleIcon(hpIcon, size);
+
 			case KQ_PRAYER_REGEN:
+			case SCORPIA_PRAYER_REGEN:
 				if (prayerRegenIcon == null)
 					prayerRegenIcon = itemManager.getImage(ITEM_PRAYER_REGEN_1, 1, false);
 				return scaleIcon(prayerRegenIcon, size);
@@ -276,6 +410,7 @@ public class PetBoostingQOLAlertOverlay extends Overlay
 				return scaleIcon(cureMeIcon, size);
 
 			case KQ_LOW_PRAYER:
+			case SCORPIA_LOW_PRAYER:
 				if (prayerPotionIcon == null)
 					prayerPotionIcon = itemManager.getImage(ITEM_PRAYER_POTION_1, 1, false);
 				return scaleIcon(prayerPotionIcon, size);
@@ -286,6 +421,7 @@ public class PetBoostingQOLAlertOverlay extends Overlay
 				return scaleIcon(extAntifireIcon, size);
 
 			case KBD_POISON:
+			case SCORPIA_POISON:
 				if (araxyteSackIcon == null)
 					araxyteSackIcon = itemManager.getImage(ITEM_ARAXYTE_SACK, 1, false);
 				return scaleIcon(araxyteSackIcon, size);
@@ -306,17 +442,12 @@ public class PetBoostingQOLAlertOverlay extends Overlay
 
 	enum AlertType
 	{
-		// Corp
 		CORP_COMBAT_IDLE, CORP_VENG, CORP_PRAYER, CORP_LUNAR,
-		// KQ
-		KQ_VENG, KQ_SATURATED, KQ_PROT_MAGE, KQ_SPEC, KQ_PRAYER_REGEN, KQ_POISON, KQ_LOW_PRAYER,
-		// Mole
+		KQ_VENG, KQ_SATURATED, KQ_PROT_MAGE, KQ_SPEC, KQ_PRAYER_REGEN, KQ_POISON, KQ_LOW_PRAYER, KQ_HP,
 		MOLE_SATURATED, MOLE_SPEC,
-		// KBD
 		KBD_ANTIFIRE, KBD_POISON, KBD_SPEC,
-		// Sire
 		SIRE_SPEC,
-		// Smoke Devil
+		SCORPIA_PRAYER_REGEN, SCORPIA_LOW_PRAYER, SCORPIA_POISON, SCORPIA_SPEC,
 		SMOKE_SPEC
 	}
 }
