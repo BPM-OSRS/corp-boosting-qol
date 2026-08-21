@@ -63,8 +63,7 @@ public class PetBoostingQOLPlugin extends Plugin
 	private static final int LUNAR_SPELLBOOK       = 2;
 	private static final int SPEC_ENERGY_VARPLAYER = 300;
 
-	private static final int SATURATED_HEART_GRAPHIC = 2287;
-	private static final int SATURATED_HEART_TICKS = 500;  // 5 minutes
+	private static final int SATURATED_HEART_VARBIT = 14704; // ticks remaining on the buff; 0 = expired
 
 	// Corp-specific constants
 	private static final int COMBAT_IDLE_TIMEOUT   = 10;
@@ -169,9 +168,7 @@ public class PetBoostingQOLPlugin extends Plugin
 
 	// KQ state
 	boolean kqVengReady            = false;
-	boolean kqSaturatedActive      = false;
 	boolean kqSaturatedWarn        = false;
-	int     kqSaturatedTicksLeft   = 0;
 	boolean kqProtMageWarn         = false;
 	boolean kqSpecWarn             = false;
 	boolean kqPrayerRegenWarn      = false;
@@ -186,9 +183,7 @@ public class PetBoostingQOLPlugin extends Plugin
 	boolean scorpiaSpecWarn        = false;
 
 	// Mole state
-	boolean moleSaturatedActive    = false;
 	boolean moleSaturatedWarn      = false;
-	int     moleSaturatedTicksLeft = 0;
 	boolean moleSpecWarn           = false;
 
 	// KBD state
@@ -329,9 +324,7 @@ public class PetBoostingQOLPlugin extends Plugin
 		kqVengReady            = false;
 		kqVengCooldown         = 0;
 		kqVengJustUsed         = false;
-		kqSaturatedActive      = false;
 		kqSaturatedWarn        = false;
-		kqSaturatedTicksLeft   = 0;
 		kqProtMageWarn         = false;
 		kqSpecWarn             = false;
 		kqPrayerRegenWarn      = false;
@@ -345,9 +338,7 @@ public class PetBoostingQOLPlugin extends Plugin
 		scorpiaPoisoned         = false;
 		scorpiaSpecWarn         = false;
 
-		moleSaturatedActive    = false;
 		moleSaturatedWarn      = false;
-		moleSaturatedTicksLeft = 0;
 		moleSpecWarn           = false;
 
 		kbdAntifireWarn      = false;
@@ -527,14 +518,10 @@ public class PetBoostingQOLPlugin extends Plugin
 
 		if (inKqCave)
 		{
-			if (kqSaturatedActive)
+			if (config.kqSaturatedHeartEnabled())
 			{
-				if (kqSaturatedTicksLeft > 0) kqSaturatedTicksLeft--;
-				else
-				{
-					kqSaturatedActive = false;
-					kqSaturatedWarn = config.kqSaturatedHeartEnabled();
-				}
+				boolean buffActive = client.getVarbitValue(SATURATED_HEART_VARBIT) > 0;
+				kqSaturatedWarn = !buffActive;
 			}
 			if (config.kqPrayerRegenEnabled())
 			{
@@ -564,14 +551,10 @@ public class PetBoostingQOLPlugin extends Plugin
 
 		if (inMoleLair)
 		{
-			if (moleSaturatedActive)
+			if (config.moleSaturatedHeartEnabled())
 			{
-				if (moleSaturatedTicksLeft > 0) moleSaturatedTicksLeft--;
-				else
-				{
-					moleSaturatedActive = false;
-					moleSaturatedWarn = config.moleSaturatedHeartEnabled();
-				}
+				boolean buffActive = client.getVarbitValue(SATURATED_HEART_VARBIT) > 0;
+				moleSaturatedWarn = !buffActive;
 			}
 			if (config.moleSpecEnabled())
 			{
@@ -789,22 +772,6 @@ public class PetBoostingQOLPlugin extends Plugin
 			{
 				kqVengJustUsed = true;
 				kqVengCooldown = VENG_COOLDOWN_TICKS;
-			}
-		}
-
-		if (graphic == SATURATED_HEART_GRAPHIC)
-		{
-			if (inKqCave)
-			{
-				kqSaturatedActive    = true;
-				kqSaturatedWarn      = false;
-				kqSaturatedTicksLeft = SATURATED_HEART_TICKS;
-			}
-			if (inMoleLair)
-			{
-				moleSaturatedActive    = true;
-				moleSaturatedWarn      = false;
-				moleSaturatedTicksLeft = SATURATED_HEART_TICKS;
 			}
 		}
 	}
